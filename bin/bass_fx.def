@@ -1,0 +1,19 @@
+LIBRARY bass_fx.dll
+EXPORTS
+BASS_FX_BPM_BeatCallbackReset
+BASS_FX_BPM_BeatCallbackSet
+BASS_FX_BPM_BeatDecodeGet
+BASS_FX_BPM_BeatFree
+BASS_FX_BPM_BeatGetParameters
+BASS_FX_BPM_BeatSetParameters
+BASS_FX_BPM_CallbackReset
+BASS_FX_BPM_CallbackSet
+BASS_FX_BPM_DecodeGet
+BASS_FX_BPM_Free
+BASS_FX_BPM_Translate
+BASS_FX_GetVersion
+BASS_FX_ReverseCreate
+BASS_FX_ReverseGetSource
+BASS_FX_TempoCreate
+BASS_FX_TempoGetRateRatio
+BASS_FX_TempoGetSource
