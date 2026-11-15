@@ -44,6 +44,8 @@ static int ApplicationZuma_LoadResources(void) {
 
     if (!LevelMgr_LoadLevels("levels.xml"))
         return 8;
+
+    return 0;
 }
 
 
@@ -55,6 +57,8 @@ static int ApplicationZuma_ShowStartupImage(void) {
     SDL_RenderCopy(engine.render, texDisc, NULL, NULL);
     SDL_RenderPresent(engine.render);
     SDL_Delay(2000);
+    SDL_DestroyTexture(texDisc);
+    return 0;
 }
 
 
@@ -65,7 +69,7 @@ static void ApplicationZuma_HandleEvents(void) {
     while(SDL_PollEvent(&e) != 0) {
         switch (e.type) {
             case SDL_QUIT:
-                exit(0);
+                app.isRunning = false;
                 break;
             case SDL_MOUSEBUTTONDOWN:
 
@@ -117,8 +121,10 @@ int ApplicationZuma_Start(void) {
     if (!Engine_CreateWindow("Zuma HD. By GalaxyShad and s4lat", WINDOW_WIDTH, WINDOW_HEIGHT))
         return 2;
 
-    ApplicationZuma_ShowStartupImage();
-    ApplicationZuma_LoadResources();
+    int status = ApplicationZuma_ShowStartupImage();
+    if (status) return status;
+    status = ApplicationZuma_LoadResources();
+    if (status) return status;
 
     srand(time(NULL));
 
@@ -132,6 +138,7 @@ int ApplicationZuma_Start(void) {
 
     while (app.isRunning) {
         ApplicationZuma_HandleEvents();
+        if (!app.isRunning) break;
 
         app.frameStart = SDL_GetTicks();
 

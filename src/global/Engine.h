@@ -5,8 +5,14 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_Image.h>
+#ifdef ZUMA_UEFI
+#include <stdlib.h>
+#include <string.h>
+typedef unsigned int HMUSIC, HSAMPLE, HSTREAM;
+#else
 #include <bass.h>
 #include <bass_fx.h>
+#endif
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -36,7 +42,7 @@ typedef struct _Font {
 	int* kerningValues;
 } Font;
 
-struct {
+typedef struct {
     /* Graphics */
     SDL_Window* 	win;
 	SDL_Renderer* 	render;
@@ -63,7 +69,9 @@ struct {
 	HSAMPLE* 		sounds;
 	unsigned int 	soundsSfxLen;
 	HSTREAM*		soundsSfx;
-} engine;
+} Engine;
+
+extern Engine engine;
 
 void Engine_PushError(const char*, const char*);
 void Engine_PushErrorCode(const char*, int);
@@ -125,4 +133,4 @@ int randInt(const int, const int);
 float fsign(float x);
 float lerp(float start, float end, float val);
 
-#endif	
+#endif

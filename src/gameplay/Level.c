@@ -1,5 +1,8 @@
 #include "Level.h"
 
+LevelManager levelMgr;
+int xmlDepth;
+
 static void LevelParser_ParseGraphics(
     void *data, const char *element, const char **attribute
 ) {
@@ -136,8 +139,9 @@ static void LevelParser_ParseStageProgression(
 
     for (int i = 0; attribute[i]; i += 2) {
         if (strncmp(attribute[i], "stage", 5) == 0) {
-            char* cid = strtok((char*)attribute[i], "stage");
-            int stageID = atoi(cid)-1;
+            int stageID = atoi(attribute[i] + 5)-1;
+            if (stageID < 0 || stageID >= STAGE_COUNT)
+                continue;
 
             char* gID = strtok((char*)attribute[i+1], ",");
             while (gID) {
@@ -155,6 +159,7 @@ static void LevelParser_ParseStageProgression(
                         levelMgr.stages[stageID].levelsLen++;
 
                         Level* lv = &levelMgr.stages[stageID].levels[levelMgr.stages[stageID].levelsLen-1];
+                        memset(lv, 0, sizeof(*lv));
                         lv->settingsID = NULL;
                         lv->graphicsID = i;
                         break;
@@ -163,12 +168,15 @@ static void LevelParser_ParseStageProgression(
                 gID = strtok(NULL, ",");
             }
         } else if (strncmp(attribute[i], "diffi", 5) == 0) {
-            char* cid = strtok((char*)attribute[i], "diffi");
-            int stageID = atoi(cid)-1;
+            int stageID = atoi(attribute[i] + 5)-1;
+            if (stageID < 0 || stageID >= STAGE_COUNT)
+                continue;
 
             char* sID = strtok((char*)attribute[i+1], ",");
             int j = 0;
             while (sID) {
+                if (j >= levelMgr.stages[stageID].levelsLen)
+                    break;
                 for (int i = 0; i < levelMgr.settingsLen; i++) {
                     if (strcmp(sID, levelMgr.settings[i].id) == 0) {
                         Level* lv = &levelMgr.stages[stageID].levels[j];
@@ -215,8 +223,8 @@ int LevelMgr_LoadLevels(const char* fileName) {
     levelMgr.survivalLevels = NULL;
     levelMgr.survivalLevelsLen = 0;
 
-    for (int i = 0; i < 11; i++) {
-        for (int j = 0; j < 11; j++) {
+    for (int i = 0; i < LEVELS_COUNT; i++) {
+        for (int j = 0; j < 4; j++) {
             levelMgr.bestScore[i][j] = 0;
             levelMgr.bestTime[i][j]  = 0;
         }
@@ -235,7 +243,7 @@ int LevelMgr_LoadLevels(const char* fileName) {
 
     FILE *fp = fopen(path, "r");
     if (!fp) {
-        Engine_PushErrorFile(path, "Íå óäàëîñü îòêðûòü ôàéë!");
+        Engine_PushErrorFile(path, "ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¾Ñ‚ÐºÑ€Ñ‹Ñ‚ÑŒ Ñ„Ð°Ð¹Ð»!");
         return 0;
     }
 
@@ -243,8 +251,8 @@ int LevelMgr_LoadLevels(const char* fileName) {
     XML_SetElementHandler(parser, XML_StartElement, XML_EndElement);
 
     do {
-        int len = (int)fread(buff, 1, sizeof(buff), fp);
-        done = len < sizeof(buff);
+        int len = (int)fread(buff, 1, XML_BUFF_SIZE, fp);
+        done = len < XML_BUFF_SIZE;
         if (XML_Parse(parser, buff, len, done) == XML_STATUS_ERROR) {
             Engine_PushErrorFile(path, XML_ErrorString(XML_GetErrorCode(parser)));
             return 0;
@@ -293,7 +301,11 @@ int LevelMgr_LoadProgress() {
     }
 
     char buff[11];
-    fgets(buff, 11, file);
+    if (fread(buff, 1, 10, file) != 10) {
+        fclose(file);
+        return 0;
+    }
+    buff[10] = '\0';
     if (strcmp(buff, "zumahdprog") != 0) {
         Engine_PushError("Error reading file \"progress.bin\".",
             "Wrong file type.");
@@ -368,6 +380,8 @@ int LevelMgr_Free() {
 
     for (int i = 0; i < STAGE_COUNT; i++)
         free(levelMgr.stages[i].levels);
+
+    return 1;
 }
 
 ////////////////////////////////////

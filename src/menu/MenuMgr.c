@@ -684,10 +684,12 @@ void DialogueBox_UpdateOptions(DialogueBox* db) {
         }
     }
 
+#ifndef ZUMA_UEFI
     if (Slider_IsDragging(&db->sliders[0])) {
         BASS_ChannelSetAttribute(engine.music, 
             BASS_ATTRIB_VOL, engine.volMus);
     }
+#endif
 }
 
 

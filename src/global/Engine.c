@@ -1,5 +1,7 @@
 #include "Engine.h"
 
+Engine engine;
+
 // ==== Common ==== //
 void Engine_PushError(const char* header, const char* main) {
     char errMsg[STR_ERR_BUFFER_SIZE];
@@ -71,11 +73,13 @@ int Engine_Init() {
     }
 
    
+#ifndef ZUMA_UEFI
     if (!BASS_Init(-1, MUSIC_FREQUENCY, BASS_DEVICE_STEREO, 0, NULL)) {
         Engine_PushErrorCode("Bass.dll initialization error", 
                                 BASS_ErrorGetCode());
         return 0;
     }
+#endif
 
     return 1;
 }
@@ -97,6 +101,7 @@ void Engine_Destroy() {
     engine.render = NULL;
 
     /* Sound and music */
+#ifndef ZUMA_UEFI
     for (int i = 0; i < engine.soundsLen; i++) 
         BASS_SampleFree(engine.sounds[i]);
     free(engine.sounds);
@@ -106,10 +111,13 @@ void Engine_Destroy() {
     free(engine.soundsSfx);
 
     BASS_MusicFree(engine.music);
+#endif
 
     SDL_Quit();
     IMG_Quit();
+#ifndef ZUMA_UEFI
     BASS_Free();
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -231,8 +239,8 @@ Font* Engine_FontLoad(const char* fileName) {
     int errFlag = 0;
     char str[64];
 
-    while(fscanf(file, "%s", str) != EOF) {
-        if (!fscanf(file, "%d", &n))
+    while(fscanf(file, "%63s", str) == 1) {
+        if (fscanf(file, "%d", &n) != 1 || n < 0)
             {errFlag = 1; break;}
 
         if (strcmp(str, "CharList") == 0) {
@@ -280,19 +288,22 @@ Font* Engine_FontLoad(const char* fileName) {
                 font->offsetList[i] = temp;
             }
         } else if (strcmp(str, "KerningPairs") == 0) {
-            font->kerningPairs = malloc(sizeof(font->kerningPairs) * n);
+            font->kerningPairs = malloc(sizeof(*font->kerningPairs) * n);
             if (!font->kerningPairs)
                 {errFlag = 1; break;}
 
             font->kerningPairsLen = n;
 
             for (int i = 0; i < n; i++) {
-                char temp[2];
-                if (!fscanf(file, "%s", &temp)) {errFlag = 1; break;}        
-                font->kerningPairs[i].ch[0] = temp[0];
-                font->kerningPairs[i].ch[1] = temp[1];
+                char temp[64];
+                if (fscanf(file, "%63s", temp) != 1) {errFlag = 1; break;}
+                int offset = (strlen(temp) == 4 && temp[0] == '"' && temp[3] == '"') ? 1 : 0;
+                font->kerningPairs[i].ch[0] = temp[offset];
+                font->kerningPairs[i].ch[1] = temp[offset+1];
             }
         } else if (strcmp(str, "KerningValues") == 0) {
+            /* Some bundled fonts have fewer values than pairs. */
+            if (font->kerningPairsLen > n) font->kerningPairsLen = n;
             font->kerningValues = malloc(sizeof(int) * n);
             if (!font->kerningValues)
                 {errFlag = 1; break;}
@@ -328,7 +339,7 @@ void Engine_FontFree(Font* font) {
 }
 
 int Engine_FontsLoad(const char** files, int n) {
-    engine.fonts = malloc(sizeof(Font) * n);
+    engine.fonts = malloc(sizeof(Font*) * n);
     if (!engine.fonts) {
         Engine_PushError("Critical Error!", "Out of memory.");
         return 0;
@@ -546,6 +557,7 @@ void Engine_DrawTextExtScale(const char* str, int fontID, float scale, SDL_Color
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // ==== Sound And Music ==== //
+#ifndef ZUMA_UEFI
 
 int Engine_MusicLoad(const char* fileName) {
     char path[STR_PATH_BUFFER_SIZE];
@@ -687,6 +699,21 @@ void Engine_PlaySoundSfxPitch(int soundID, float pitch) {
 void Engine_StopSoundSfx(int soundID) {
     BASS_ChannelStop(engine.soundsSfx[soundID]);
 }
+#else
+/* UEFI has no standard audio protocol. Keep the game API, run silently. */
+int Engine_MusicLoad(const char* file) { (void)file; return 1; }
+HSAMPLE Engine_SoundLoad(const char* file) { (void)file; return 0; }
+HSTREAM Engine_SoundSfxLoad(const char* file) { (void)file; return 0; }
+int Engine_SoundsLoad(const char** files, int n) { (void)files; (void)n; return 1; }
+int Engine_SoundsSfxLoad(const char** files, int n) { (void)files; (void)n; return 1; }
+HSAMPLE Engine_GetSoundSample(int id) { (void)id; return 0; }
+void Engine_PlayMusic(int id) { (void)id; }
+void Engine_StopMusic(void) {}
+void Engine_PlaySound(int id) { (void)id; }
+void Engine_StopSound(int id) { (void)id; }
+void Engine_PlaySoundSfxPitch(int id, float pitch) { (void)id; (void)pitch; }
+void Engine_StopSoundSfx(int id) { (void)id; }
+#endif
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
@@ -795,7 +822,7 @@ int Engine_LoadSettings() {
         return 0;
     }
 
-    bool full = -1;
+    int full = -1;
     if (fscanf(file, "%d", &full) == 1 && full >= 0 && full <= 1) {
         engine.fullScr = full;
         if (engine.fullScr) {
@@ -809,6 +836,7 @@ int Engine_LoadSettings() {
         return 0;
     }
 
+    fclose(file);
     return 1;
 }
 
