@@ -64,6 +64,8 @@ void Game_Init(Game* game, int lvlID, int difficulty) {
     
     Frog_Init(&game->frog, (game->graphics->frogPos.x + 106) * engine.scale_x, 
         game->graphics->frogPos.y * engine.scale_y);
+    game->frog.isColorSelected = false;
+
 
     BallChain_Init(&game->chain, game->lvl, game->settings);
 
@@ -150,6 +152,7 @@ static bool _Game_FrogControl(Game* game, int mouseClicked) {
                 isShooted = true;
             break;
         case 2: {
+            game->frog.isColorSelected = false;
             char t = game->frog.color;
             game->frog.color = game->frog.nextColor;
             game->frog.nextColor = t;
@@ -407,6 +410,7 @@ void Game_Update(Game* game, int* inMenu, int mouseClicked) {
         Engine_PlaySound(SND_FIREBALL1);
 
         game->frog.isShooted = 1;
+        game->frog.isColorSelected = false;
         game->frog.color = game->frog.nextColor;
         game->frog.nextColor = randInt(0, game->chain.ballColors-1);
         while(!game->chain.colorInChain[game->frog.nextColor])
@@ -419,7 +423,7 @@ void Game_Update(Game* game, int* inMenu, int mouseClicked) {
         while(!game->chain.colorInChain[game->frog.nextColor])
             game->frog.nextColor = randInt(0, game->chain.ballColors-1);
 
-        while(!game->chain.colorInChain[game->frog.color])
+        while(!game->frog.isColorSelected && !game->chain.colorInChain[game->frog.color])
             game->frog.color = randInt(0, game->chain.ballColors-1);
     }
 

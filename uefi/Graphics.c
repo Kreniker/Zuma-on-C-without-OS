@@ -7,7 +7,7 @@ static uint32_t *display;
 static int screenW,screenH,viewX,viewY,viewW,viewH;
 static int mouseX=640,mouseY=360;
 static uint32_t physicalButtons,mouseButtons;
-static SDL_Event events[16];
+static SDL_Event events[18];
 static int eventCount,eventPos,pumped;
 static const char *error="UEFI graphics or resource error";
 void ZumaBeginGraphics(void);
@@ -120,7 +120,7 @@ int SDL_RenderDrawRectF(SDL_Renderer *r,const SDL_FRect *d){SDL_RenderDrawLineF(
 int SDL_RenderFillRect(SDL_Renderer *r,const SDL_Rect *d){uint32_t rgb=(r->color.r<<16)|(r->color.g<<8)|r->color.b;for(int y=max(0,d->y);y<min(r->h,d->y+d->h);y++)for(int x=max(0,d->x);x<min(r->w,d->x+d->w);x++)pixel(r,x,y,rgb,r->color.a);return 0;}
 uint32_t SDL_GetTicks(void){return (uint32_t)ZumaMilliseconds();}
 void SDL_Delay(uint32_t ms){zBS->Stall((UINTN)ms*1000);}
-static void addEvent(uint32_t type,uint8_t button){if(eventCount<16){events[eventCount].type=type;events[eventCount++].button.button=button;}}
+static void addEvent(uint32_t type,uint8_t button){if(eventCount<18){events[eventCount].type=type;events[eventCount++].button.button=button;}}
 static void pumpInput(void){
     eventCount=eventPos=0;pumped=1;uint32_t old=mouseButtons;
     if(zPointer){EFI_SIMPLE_POINTER_STATE p;for(int i=0;i<32&&!EFI_ERROR(zPointer->GetState(zPointer,&p));i++){mouseX+=p.RelativeMovementX*2;mouseY+=p.RelativeMovementY*2;physicalButtons=(p.LeftButton?SDL_BUTTON(SDL_BUTTON_LEFT):0)|(p.RightButton?SDL_BUTTON(SDL_BUTTON_RIGHT):0);}}
@@ -136,6 +136,13 @@ static void pumpInput(void){
     }}
     mouseButtons=physicalButtons;
     EFI_INPUT_KEY key;for(int i=0;i<16&&!EFI_ERROR(zST->ConIn->ReadKeyStroke(zST->ConIn,&key));i++){
+        if (key.UnicodeChar >= '1' && key.UnicodeChar <= '6'
+            && eventCount < 18) {
+            SDL_Event *event = &events[eventCount++];
+            *event = (SDL_Event){0};
+            event->type = SDL_KEYDOWN;
+            event->key.keysym.sym = key.UnicodeChar;
+        }
         if(key.ScanCode==SCAN_ESC || key.UnicodeChar==27)addEvent(SDL_QUIT,0);
         if(key.ScanCode==SCAN_LEFT || key.UnicodeChar=='a')mouseX-=20;
         if(key.ScanCode==SCAN_RIGHT || key.UnicodeChar=='d')mouseX+=20;

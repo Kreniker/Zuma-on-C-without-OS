@@ -11,7 +11,14 @@ typedef struct { float x,y,w,h; } SDL_FRect;
 typedef struct { int w,h; uint32_t *pixels; uint8_t r,g,b,a; } SDL_Texture;
 typedef SDL_Texture SDL_Surface;
 typedef struct { int w,h; SDL_Color color; uint32_t *pixels; } SDL_Renderer;
-typedef struct { uint32_t type; struct { uint8_t button; } button; } SDL_Event;
+typedef struct {
+    uint32_t type;
+    struct { uint8_t button; } button;
+    struct {
+        struct { int sym; } keysym;
+    } key;
+} SDL_Event;
+
 #define SDL_INIT_VIDEO 1
 #define SDL_WINDOWPOS_UNDEFINED 0
 #define SDL_WINDOW_OPENGL 0
@@ -21,6 +28,7 @@ typedef struct { uint32_t type; struct { uint8_t button; } button; } SDL_Event;
 #define SDL_HINT_RENDER_SCALE_QUALITY ""
 #define SDL_MESSAGEBOX_ERROR 0
 #define SDL_QUIT 0x100
+#define SDL_KEYDOWN 0x300
 #define SDL_MOUSEBUTTONDOWN 0x401
 #define SDL_BUTTON_LEFT 1
 #define SDL_BUTTON_RIGHT 3

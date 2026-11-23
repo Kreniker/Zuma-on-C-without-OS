@@ -22,6 +22,7 @@
 typedef struct _Frog {
 	float x, y;
 	char nextColor, color;
+	bool isColorSelected;
 	float shift, tongueShift;
 	double forwardX;
 	double forwardY;

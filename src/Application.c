@@ -71,6 +71,20 @@ static void ApplicationZuma_HandleEvents(void) {
             case SDL_QUIT:
                 app.isRunning = false;
                 break;
+	    case SDL_KEYDOWN:
+                if (e.key.keysym.sym >= '1' && e.key.keysym.sym <= '6'
+                    && !app.inMenu && app.game.isIntroEnded
+                    && !app.game.isLosed && !app.game.isWon
+                    && !app.game.chain.isEndReached
+                    && !app.game.dbMenu && !app.game.dbStats
+                    && !app.game.dbGameOver) {
+                    int color = e.key.keysym.sym - '1';
+                    if (color < app.game.chain.ballColors) {
+                        app.game.frog.color = (char)color;
+                        app.game.frog.isColorSelected = true;
+                    }
+                }
+                break;
             case SDL_MOUSEBUTTONDOWN:
 
                 switch (e.button.button) {
