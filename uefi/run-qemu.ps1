@@ -33,7 +33,7 @@ if (-not (Test-Path -LiteralPath $DiskImage) -or $RefreshImage) {
     & $QemuImg convert -f raw ('fat:'+$espDir) -O raw $DiskImage
     if ($LASTEXITCODE -ne 0) { throw 'Could not prepare the FAT disk image' }
 }
-$qemuArgs = @('-machine','q35','-m','512','-net','none','-device','qemu-xhci','-device','usb-mouse',
+$qemuArgs = @('-accel','whpx','-machine','q35','-m','512','-net','none','-device','qemu-xhci','-device','usb-mouse',
     '-drive',('if=pflash,format=raw,readonly=on,file=' + [IO.Path]::GetFullPath($Firmware)),
     '-drive',('format=raw,file=' + $DiskImage))
 if ($Vars) {
